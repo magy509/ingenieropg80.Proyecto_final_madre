@@ -2,3 +2,7 @@ __pycache__
 .env
 .learn
 /src/movies-data
+/src/feeling/
+/src/opiniones/
+/src/movies.txt.gz
+/src/data
