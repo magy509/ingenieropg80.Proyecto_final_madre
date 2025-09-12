@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 import time
 import gzip
+import os
 
 ##primer dataset
 def peli_info_df():
@@ -12,11 +13,11 @@ def peli_info_df():
         df = pd.read_csv(f"../data/interim/movies-data/ml-32m/{i}.csv")
         df_list.append(df)
     
-    links, movies, ratings, tags = df_list
-    return links, movies, ratings, tags
+    
+    return df_list
 
 ##segundo dataset
-def senti_df(max_reviews=10000):
+def feel_df(max_reviews=10000):
     file_path = "../data/interim/movies.txt.gz"
     data = []
     current_review = {}
@@ -67,3 +68,18 @@ def review_dataset():
 
     df_imdb = pd.read_csv(csv_path)
     return df_imdb
+
+## train y test de reseñas
+
+def cargar_reseñas(directorio):
+    textos = []
+    etiquetas = []
+
+    for label in ['pos', 'neg']:
+        path = os.path.join(directorio, label)
+        for archivo in os.listdir(path):
+            with open(os.path.join(path, archivo), encoding='utf-8') as f:
+                textos.append(f.read())
+                etiquetas.append(1 if label == 'pos' else 0)
+    return textos, etiquetas
+
