@@ -1,6 +1,7 @@
 __pycache__
 .env
 .learn
-
+/src/descarga.ipynb
+/src/datasets.ipynb
 /data/interim/
 /data/kaggle.json
