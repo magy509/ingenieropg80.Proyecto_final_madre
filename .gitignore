@@ -4,8 +4,6 @@ __pycache__
 /src/descarga.ipynb
 /src/datasets.ipynb
 /data/interim/
+/data/raw/
 /data/kaggle.json
-
-/src/descarga.ipynb
-/src/datasets.ipynb
 /models
