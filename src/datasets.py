@@ -63,11 +63,10 @@ def feel_df(max_reviews=10000):
     return df
 
 ##tercer dataset
-def review_dataset():
-    csv_path = '../data/interim/imdb-dataset/IMDB Dataset SPANISH.csv'
+def get_dataset(link):
 
-    df_imdb = pd.read_csv(csv_path)
-    return df_imdb
+    df = pd.read_csv(link)
+    return df
 
 ## train y test de reseñas
 
