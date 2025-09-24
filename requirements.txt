@@ -16,5 +16,8 @@ xgboost
 kaggle
 bs4 
 scikit-surprise
+<<<<<<< HEAD
 streamlit
+=======
+>>>>>>> e9369ddb534416559a6f8e58a1bb7cdc9201a572
 kagglehub
