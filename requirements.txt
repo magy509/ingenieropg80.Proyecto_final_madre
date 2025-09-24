@@ -16,3 +16,5 @@ xgboost
 kaggle
 bs4 
 scikit-surprise
+streamlit
+kagglehub
