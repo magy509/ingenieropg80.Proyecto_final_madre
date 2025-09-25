@@ -63,9 +63,13 @@ def feel_df(max_reviews=10000):
     return df
 
 ##tercer dataset
-def get_dataset(link):
-
-    df = pd.read_csv(link)
+def get_dataset(csv_path):
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"El archivo '{csv_path}' no existe.")
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:
+        raise ValueError(f"Error al leer el archivo CSV: {e}")
     return df
 
 ## train y test de reseñas
