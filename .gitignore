@@ -6,4 +6,3 @@ __pycache__
 /data/interim/
 /data/raw/
 /data/kaggle.json
-/models
