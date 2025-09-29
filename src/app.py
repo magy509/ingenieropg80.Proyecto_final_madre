@@ -93,9 +93,30 @@ if pipeline is not None and movies is not None:
         value=(int(min(years)), int(max(years)))
     )
     
-    # Input para actor y director
-    selected_actor = st.sidebar.text_input("Actor")
-    selected_director = st.sidebar.text_input("Director")
+    # Obtener listas únicas de actores y directores
+    # Procesar actores
+    all_actors = set()  # Usamos set para evitar duplicados desde el inicio
+    for actors_str in movies_clean["actors"].dropna():
+        # Eliminar corchetes y comillas
+        actors_str = actors_str.replace("[", "").replace("]", "").replace("'", "")
+        # Dividir por coma y limpiar cada actor
+        actors = [actor.strip() for actor in actors_str.split(",") if actor.strip()]
+        all_actors.update(actors)
+    unique_actors = sorted(list(all_actors))  # Convertir a lista ordenada
+    
+    # Procesar directores
+    all_directors = set()  # Usamos set para evitar duplicados desde el inicio
+    for directors_str in movies_clean["directors"].dropna():
+        # Eliminar corchetes y comillas
+        directors_str = directors_str.replace("[", "").replace("]", "").replace("'", "")
+        # Dividir por coma y limpiar cada director
+        directors = [director.strip() for director in directors_str.split(",") if director.strip()]
+        all_directors.update(directors)
+    unique_directors = sorted(list(all_directors))  # Convertir a lista ordenada
+    
+    # Listas desplegables para actor y director
+    selected_actor = st.sidebar.selectbox("Actor", [""] + unique_actors)
+    selected_director = st.sidebar.selectbox("Director", [""] + unique_directors)
     
     # Slider para Tomatometer
     selected_tomatometer = st.sidebar.slider("Puntuación mínima en Tomatometer", 0, 100, 50)
