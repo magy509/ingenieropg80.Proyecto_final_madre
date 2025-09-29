@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np 
+import os
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -220,4 +221,15 @@ def blancos(df):
             df[col] = df[col].fillna(moda[0])
     return df
     print(df.info())
+
+
+
+def get_dataset(csv_path):
+    if not os.path.isfile(csv_path):
+        raise FileNotFoundError(f"El archivo '{csv_path}' no existe.")
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception as e:
+        raise ValueError(f"Error al leer el archivo CSV: {e}")
+    return df
 
