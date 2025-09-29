@@ -9,7 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 import numpy as np    
-
+import ast
 import requests
 import urllib.parse
 
@@ -23,7 +23,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Título y descripción
+
 st.title("🎬 Sistema de Recomendación de Películas")
 st.markdown("### Encuentra tu próxima película favorita")
 
@@ -45,6 +45,7 @@ def cargar_datos():
 
 pipeline, movies = cargar_datos()
 
+
 def obtener_poster(titulo):
     try:
         titulo_encoded = urllib.parse.quote(titulo)  
@@ -55,13 +56,14 @@ def obtener_poster(titulo):
             try:
                 data = response.json()
             except Exception:
-                return None  # si no es JSON válido
+                return None  
 
             if data.get("Response") == "True" and "Poster" in data:
                 return data["Poster"]
         return None
     except Exception:
         return None
+
 
 if pipeline is not None and movies is not None:
     # Preparar los datos
@@ -76,9 +78,11 @@ if pipeline is not None and movies is not None:
     
     # Géneros disponibles
     all_genres = []
-    for genres in movies_clean["genres"].str.split(","):
-        if isinstance(genres, list):
-            all_genres.extend(genres)
+    for genres in movies_clean["genres"].dropna():
+        genres = genres.replace("[","").replace("]","").replace("'","")
+        genres_list = [g.strip() for g in genres.split(",") if g.strip()]
+        all_genres.extend(genres_list)
+
     unique_genres = sorted(list(set([g.strip() for g in all_genres if g])))
     
     # Filtros en el sidebar
@@ -120,7 +124,7 @@ if pipeline is not None and movies is not None:
     
     # Slider para Tomatometer
     selected_tomatometer = st.sidebar.slider("Puntuación mínima en Tomatometer", 0, 100, 50)
-    
+
     # Película de referencia
     movie_titles = sorted(movies_clean["movie_title"].unique())
     selected_movie = st.selectbox("Selecciona una película de referencia", [""] + movie_titles)
@@ -200,8 +204,8 @@ if pipeline is not None and movies is not None:
             top_indices = top_indices[:top_n]
 
         return movies_clean.iloc[top_indices][
-            ["movie_title", "genres", "actors", "directors", "tomatometer_rating", 
-             "critics_consensus", "match_score", "consensus_sentiment_prob"]
+            ["movie_title", "genres", "actors", "directors", "tomatometer_rating", "movie_info",
+             "critics_consensus", "match_score", "consensus_sentiment_norm"]
         ]
 
     # Botón para generar recomendaciones
@@ -211,44 +215,38 @@ if pipeline is not None and movies is not None:
             
             #Aqui se obtinene los posters
             posters = [obtener_poster(t) for t in recommendations["movie_title"].tolist()]
-
-
-
+            
+            
             # Mostrar recomendaciones
             for (idx, movie), poster_url in zip(recommendations.iterrows(), posters):
+
+                genres = ast.literal_eval(movie['genres'])
+                directors = ast.literal_eval(movie['directors'])
+                actors = ast.literal_eval(movie['actors'])
+
                 with st.container():
                     col1, col2 = st.columns([1, 3])
                     with col1:
                         if poster_url and poster_url != "N/A":
                             st.image(poster_url, use_container_width=True)
                         else:
-                            st.write("📷 Sin póster disponible")
+                            placeholder_url = "https://placehold.co/200x300?text=No+Image"
+                            st.image(placeholder_url, use_container_width=True)
 
-                        st.metric("Tomatometer", f"{movie['tomatometer_rating']}%")
-                        st.metric("Sentimiento", f"{movie['consensus_sentiment_prob']:.2f}")
+                        metric_col1, metric_col2 = st.columns(2)
+                        metric_col1.metric("Tomatometer", f"{movie['tomatometer_rating']}%")
+                        metric_col2.metric("Sentimiento", f"{movie['consensus_sentiment_norm']:.2f}")
                 
                     with col2:
                         st.subheader(movie["movie_title"])
-                        st.write(f"**Géneros:** {movie['genres']}")
-                        st.write(f"**Director:** {movie['directors']}")
-                        st.write(f"**Actores principales:** {movie['actors'][:100]}...")
+                        st.write(f"**Géneros:** {', '.join(genres)}")
+                        st.write(f"**Director:** {', '.join(directors)}")
+                        st.write(f"**Actores principales:** {', '.join(actors[:5])}...")
+                        if movie['movie_info']:
+                            st.write(f"**Información:** {movie['movie_info']}")
                         if movie['critics_consensus']:
                             st.write(f"**Consenso de críticos:** {movie['critics_consensus']}")
                 st.divider()
-            """for _, movie in recommendations.iterrows():
-                with st.container():
-                    col1, col2 = st.columns([1, 3])
-                    with col1:
-                        st.metric("Tomatometer", f"{movie['tomatometer_rating']}%")
-                        st.metric("Sentimiento", f"{movie['consensus_sentiment_prob']:.2f}")
-                    with col2:
-                        st.subheader(movie["movie_title"])
-                        st.write(f"**Géneros:** {movie['genres']}")
-                        st.write(f"**Director:** {movie['directors']}")
-                        st.write(f"**Actores principales:** {movie['actors'][:100]}...")
-                        if movie['critics_consensus']:
-                            st.write(f"**Consenso de críticos:** {movie['critics_consensus']}")
-                    st.divider()"""
 else:
     st.error("No se pudieron cargar los datos necesarios para la aplicación.")
     st.info("Por favor, verifica que los archivos de datos y el modelo estén disponibles en las rutas correctas.")
