@@ -46,7 +46,7 @@ if pipeline is not None and movies is not None:
     movies_clean = movies.copy()
     for col in ["genres", "actors", "directors", "movie_info", "critics_consensus"]:
         movies_clean[col] = movies_clean[col].fillna("")
-    movies_clean["release_year"] = movies_clean["release_year"].fillna("1900")
+    movies_clean["release_year"] = pd.to_numeric(movies_clean["release_year"], errors='coerce')
     movies_clean["tomatometer_rating"] = movies_clean["tomatometer_rating"].fillna(0)
 
     # Sidebar para filtros
@@ -63,7 +63,7 @@ if pipeline is not None and movies is not None:
     selected_genres = st.sidebar.multiselect("Géneros", unique_genres)
     
     # Extraer años únicos
-    years = sorted(movies_clean["release_year"].unique())
+    years = sorted(movies_clean["release_year"].dropna().unique())
     year_range = st.sidebar.slider(
         "Rango de Años",
         min_value=int(min(years)),
@@ -108,7 +108,7 @@ if pipeline is not None and movies is not None:
                 lambda x: 2 if selected_director in x else 0
             )
         movies_clean["match_score"] += movies_clean["release_year"].apply(
-            lambda x: 1 if year_range[0] <= int(str(x)[:4]) <= year_range[1] else 0
+            lambda x: 1 if pd.notna(x) and year_range[0] <= int(x) <= year_range[1] else 0
         )
         movies_clean["match_score"] += movies_clean["tomatometer_rating"].apply(
             lambda x: 1 if x >= selected_tomatometer else 0
