@@ -28,11 +28,11 @@ st.markdown("### Encuentra tu próxima película favorita")
 def cargar_datos():
     try:
         # Cargar el pipeline
-        with open("../models/rotten_pipeline.pkl", "rb") as f:
+        with open("models/rotten_pipeline.pkl", "rb") as f:
             pipeline = pickle.load(f)
         
         # Cargar el dataset de películas
-        movies = pd.read_csv("../data/processed/movies.csv")
+        movies = pd.read_csv("data/processed/movies.csv")
         
         return pipeline, movies
     except Exception as e:
