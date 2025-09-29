@@ -10,7 +10,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 import numpy as np    
 
+import requests
+import urllib.parse
 
+
+api_key = "fa1b7162"  
 
 # Configuración de la página
 st.set_page_config(
@@ -40,6 +44,24 @@ def cargar_datos():
         return None, None
 
 pipeline, movies = cargar_datos()
+
+def obtener_poster(titulo):
+    try:
+        titulo_encoded = urllib.parse.quote(titulo)  
+        url = f"http://www.omdbapi.com/?t={titulo_encoded}&apikey={api_key}"
+        response = requests.get(url, timeout=5)
+
+        if response.status_code == 200:
+            try:
+                data = response.json()
+            except Exception:
+                return None  # si no es JSON válido
+
+            if data.get("Response") == "True" and "Poster" in data:
+                return data["Poster"]
+        return None
+    except Exception:
+        return None
 
 if pipeline is not None and movies is not None:
     # Preparar los datos
@@ -166,8 +188,33 @@ if pipeline is not None and movies is not None:
         with st.spinner("Generando recomendaciones..."):
             recommendations = recomendar_peliculas()
             
+            #Aqui se obtinene los posters
+            posters = [obtener_poster(t) for t in recommendations["movie_title"].tolist()]
+
+
+
             # Mostrar recomendaciones
-            for _, movie in recommendations.iterrows():
+            for (idx, movie), poster_url in zip(recommendations.iterrows(), posters):
+                with st.container():
+                    col1, col2 = st.columns([1, 3])
+                    with col1:
+                        if poster_url and poster_url != "N/A":
+                            st.image(poster_url, use_container_width=True)
+                        else:
+                            st.write("📷 Sin póster disponible")
+
+                        st.metric("Tomatometer", f"{movie['tomatometer_rating']}%")
+                        st.metric("Sentimiento", f"{movie['consensus_sentiment_prob']:.2f}")
+                
+                    with col2:
+                        st.subheader(movie["movie_title"])
+                        st.write(f"**Géneros:** {movie['genres']}")
+                        st.write(f"**Director:** {movie['directors']}")
+                        st.write(f"**Actores principales:** {movie['actors'][:100]}...")
+                        if movie['critics_consensus']:
+                            st.write(f"**Consenso de críticos:** {movie['critics_consensus']}")
+                st.divider()
+            """for _, movie in recommendations.iterrows():
                 with st.container():
                     col1, col2 = st.columns([1, 3])
                     with col1:
@@ -180,7 +227,9 @@ if pipeline is not None and movies is not None:
                         st.write(f"**Actores principales:** {movie['actors'][:100]}...")
                         if movie['critics_consensus']:
                             st.write(f"**Consenso de críticos:** {movie['critics_consensus']}")
-                    st.divider()
+                    st.divider()"""
 else:
     st.error("No se pudieron cargar los datos necesarios para la aplicación.")
     st.info("Por favor, verifica que los archivos de datos y el modelo estén disponibles en las rutas correctas.")
+
+
