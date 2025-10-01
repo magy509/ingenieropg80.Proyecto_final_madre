@@ -19,3 +19,5 @@ scikit-surprise
 streamlit
 kagglehub
 plotly
+openpyxl
+kagglehub

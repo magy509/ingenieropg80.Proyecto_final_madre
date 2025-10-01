@@ -9,12 +9,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 import numpy as np    
-import ast
-import requests
-import urllib.parse
 
 
-api_key = "fa1b7162"  
 
 # Configuración de la página
 st.set_page_config(
@@ -23,7 +19,7 @@ st.set_page_config(
     layout="wide"
 )
 
-
+# Título y descripción
 st.title("🎬 Sistema de Recomendación de Películas")
 st.markdown("### Encuentra tu próxima película favorita")
 
@@ -45,26 +41,6 @@ def cargar_datos():
 
 pipeline, movies = cargar_datos()
 
-
-def obtener_poster(titulo):
-    try:
-        titulo_encoded = urllib.parse.quote(titulo)  
-        url = f"http://www.omdbapi.com/?t={titulo_encoded}&apikey={api_key}"
-        response = requests.get(url, timeout=5)
-
-        if response.status_code == 200:
-            try:
-                data = response.json()
-            except Exception:
-                return None  
-
-            if data.get("Response") == "True" and "Poster" in data:
-                return data["Poster"]
-        return None
-    except Exception:
-        return None
-
-
 if pipeline is not None and movies is not None:
     # Preparar los datos
     movies_clean = movies.copy()
@@ -78,11 +54,9 @@ if pipeline is not None and movies is not None:
     
     # Géneros disponibles
     all_genres = []
-    for genres in movies_clean["genres"].dropna():
-        genres = genres.replace("[","").replace("]","").replace("'","")
-        genres_list = [g.strip() for g in genres.split(",") if g.strip()]
-        all_genres.extend(genres_list)
-
+    for genres in movies_clean["genres"].str.split(","):
+        if isinstance(genres, list):
+            all_genres.extend(genres)
     unique_genres = sorted(list(set([g.strip() for g in all_genres if g])))
     
     # Filtros en el sidebar
@@ -97,34 +71,13 @@ if pipeline is not None and movies is not None:
         value=(int(min(years)), int(max(years)))
     )
     
-    # Obtener listas únicas de actores y directores
-    # Procesar actores
-    all_actors = set()  # Usamos set para evitar duplicados desde el inicio
-    for actors_str in movies_clean["actors"].dropna():
-        # Eliminar corchetes y comillas
-        actors_str = actors_str.replace("[", "").replace("]", "").replace("'", "")
-        # Dividir por coma y limpiar cada actor
-        actors = [actor.strip() for actor in actors_str.split(",") if actor.strip()]
-        all_actors.update(actors)
-    unique_actors = sorted(list(all_actors))  # Convertir a lista ordenada
-    
-    # Procesar directores
-    all_directors = set()  # Usamos set para evitar duplicados desde el inicio
-    for directors_str in movies_clean["directors"].dropna():
-        # Eliminar corchetes y comillas
-        directors_str = directors_str.replace("[", "").replace("]", "").replace("'", "")
-        # Dividir por coma y limpiar cada director
-        directors = [director.strip() for director in directors_str.split(",") if director.strip()]
-        all_directors.update(directors)
-    unique_directors = sorted(list(all_directors))  # Convertir a lista ordenada
-    
-    # Listas desplegables para actor y director
-    selected_actor = st.sidebar.selectbox("Actor", [""] + unique_actors)
-    selected_director = st.sidebar.selectbox("Director", [""] + unique_directors)
+    # Input para actor y director
+    selected_actor = st.sidebar.text_input("Actor")
+    selected_director = st.sidebar.text_input("Director")
     
     # Slider para Tomatometer
     selected_tomatometer = st.sidebar.slider("Puntuación mínima en Tomatometer", 0, 100, 50)
-
+    
     # Película de referencia
     movie_titles = sorted(movies_clean["movie_title"].unique())
     selected_movie = st.selectbox("Selecciona una película de referencia", [""] + movie_titles)
@@ -204,8 +157,8 @@ if pipeline is not None and movies is not None:
             top_indices = top_indices[:top_n]
 
         return movies_clean.iloc[top_indices][
-            ["movie_title", "genres", "actors", "directors", "tomatometer_rating", "movie_info",
-             "critics_consensus", "match_score", "consensus_sentiment_norm"]
+            ["movie_title", "genres", "actors", "directors", "tomatometer_rating", 
+             "critics_consensus", "match_score", "consensus_sentiment_prob"]
         ]
 
     # Botón para generar recomendaciones
@@ -213,42 +166,21 @@ if pipeline is not None and movies is not None:
         with st.spinner("Generando recomendaciones..."):
             recommendations = recomendar_peliculas()
             
-            #Aqui se obtinene los posters
-            posters = [obtener_poster(t) for t in recommendations["movie_title"].tolist()]
-            
-            
             # Mostrar recomendaciones
-            for (idx, movie), poster_url in zip(recommendations.iterrows(), posters):
-
-                genres = ast.literal_eval(movie['genres'])
-                directors = ast.literal_eval(movie['directors'])
-                actors = ast.literal_eval(movie['actors'])
-
+            for _, movie in recommendations.iterrows():
                 with st.container():
                     col1, col2 = st.columns([1, 3])
                     with col1:
-                        if poster_url and poster_url != "N/A":
-                            st.image(poster_url, use_container_width=True)
-                        else:
-                            placeholder_url = "https://placehold.co/200x300?text=No+Image"
-                            st.image(placeholder_url, use_container_width=True)
-
-                        metric_col1, metric_col2 = st.columns(2)
-                        metric_col1.metric("Tomatometer", f"{movie['tomatometer_rating']}%")
-                        metric_col2.metric("Sentimiento", f"{movie['consensus_sentiment_norm']:.2f}")
-                
+                        st.metric("Tomatometer", f"{movie['tomatometer_rating']}%")
+                        st.metric("Sentimiento", f"{movie['consensus_sentiment_prob']:.2f}")
                     with col2:
                         st.subheader(movie["movie_title"])
-                        st.write(f"**Géneros:** {', '.join(genres)}")
-                        st.write(f"**Director:** {', '.join(directors)}")
-                        st.write(f"**Actores principales:** {', '.join(actors[:5])}...")
-                        if movie['movie_info']:
-                            st.write(f"**Información:** {movie['movie_info']}")
+                        st.write(f"**Géneros:** {movie['genres']}")
+                        st.write(f"**Director:** {movie['directors']}")
+                        st.write(f"**Actores principales:** {movie['actors'][:100]}...")
                         if movie['critics_consensus']:
                             st.write(f"**Consenso de críticos:** {movie['critics_consensus']}")
-                st.divider()
+                    st.divider()
 else:
     st.error("No se pudieron cargar los datos necesarios para la aplicación.")
     st.info("Por favor, verifica que los archivos de datos y el modelo estén disponibles en las rutas correctas.")
-
-
