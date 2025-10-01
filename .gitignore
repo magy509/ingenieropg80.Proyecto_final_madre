@@ -3,6 +3,8 @@ __pycache__
 .learn
 /src/descarga.ipynb
 /src/datasets.ipynb
+/src/rotten_tomatoes.ipynb
 /data/interim/
 /data/raw/
+/data/processed/
 /data/kaggle.json
